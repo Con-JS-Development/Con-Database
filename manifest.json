@@ -1,0 +1,30 @@
+{
+    "format_version": 2,
+    "header": {
+        "description": "Test",
+        "name": "Data Base Testing",
+        "uuid": "9064bb7e-7f17-4a7c-8601-70a841ca1fb1",
+        "version": [1, 1, 8],
+        "min_engine_version" : [ 1, 18, 0 ]
+    },
+    "modules": [
+        {
+            "type": "data",
+            "uuid": "f044ecc5-d53e-454a-bcec-668cb2eb7ea6",
+            "version": [1, 0, 2]
+        },
+        {
+			"type": "script",
+            "uuid": "7c833baf-e69a-41f5-ac38-5bde625f8d6a",
+            "entry": "scripts/Main.js",
+            "version": [1, 0, 0]
+        }
+    ],
+    "dependencies": [
+        {
+            "description": "mojang-minecraft",
+            "uuid": "b26a4d4c-afdf-4690-88f8-931846312678",
+            "version": "0.1.0"
+        }
+    ]
+}
