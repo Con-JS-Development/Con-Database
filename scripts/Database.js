@@ -1,28 +1,42 @@
 import { world, Scoreboard, ScoreboardObjective } from "mojang-minecraft"
 
-const scoreSymbol = Symbol('scores'), nameSymbol = Symbol('name');
+const scoreSymbol = Symbol('scores'), nameSymbol = Symbol('name'), dbTypeSymbol = Symbol('dbType');
 const overworld = world.getDimension('overworld'), {scoreboard} = world, fakeMaxLength = 31000;
 const defaultType = 'Type:default', extendedType = 'Type:extended';
 
-export class Database extends Map{
-    constructor(name,instantLoad=false){
+class DB extends Map{
+    constructor(name,type){
         if(typeof(name)!=='string') throw new TypeError('Name is not a string.');
         if(name.length>12) throw new Error('Name for this DB is too large.');
         if(name.match(/[\0]/g)?.length>0) throw new Error('Invalid character mach in the name of the Database.');
-        const t = new Date().getTime();
         super();
-        this[scoreSymbol] = getObjective(name,defaultType);
         this[nameSymbol] = name;
-        if(instantLoad) this.load();
-        console.warn('Load: ' + (new Date().getTime() - t) + ' ms');
+        this[scoreSymbol] = getObjective(name,type);
+        this[dbTypeSymbol] = type;
     }
-    get name(){
-        return this[nameSymbol];
-    }
-    get objective(){
-        return this[scoreSymbol];
+    clear(){
+        scoreboard._removeObjective(this[nameSymbol]);
+        scoreboard._addObjective(this[nameSymbol],this[dbTypeSymbol]);
+        this[scoreSymbol] = getObjective(this[nameSymbol],this[dbTypeSymbol]);
+        super.clear();
     }
     get sizeAll(){return [...this.entriesAll()].length??0;}
+    get name(){return this[nameSymbol];}
+    get objective(){return this[scoreSymbol];}
+    loadAll(){return [...this.entriesAll()];}
+    forEachAll(callBack){for (const [key,value] of this.entriesAll()) try{callBack(value,key,this);}catch{}}
+    *keysAll(){for (const [key,value] of this.entriesAll()) yield key;}
+    *valuesAll(){for (const [key,value] of this.entriesAll()) yield value;}
+    hasAll(key){if(super.has(key)) return true; for (const [theKey] of this.entriesAll()) if(theKey === key) return true; return false;}
+}
+export class Database extends DB{
+    constructor(name,instantLoad=false){
+        super(name,defaultType);
+        console.warn(defaultType);
+        const t = new Date().getTime();
+        if(instantLoad) this.loadAll();
+        console.warn('Load: ' + (new Date().getTime() - t) + ' ms');
+    }
     delete(key){
         if (typeof(key)!=='string') throw new TypeError('key is not a string.');
         super.delete(key);
@@ -43,7 +57,7 @@ export class Database extends Map{
             }
         }
         if(raw==="") return;
-        const data = JSOn.parse(raw.getModify());
+        const data = JSON.parse(raw.getModify());
         super.set(key,data);
         return data;
     }
@@ -56,21 +70,6 @@ export class Database extends Map{
         this[scoreSymbol].setScoreTarget(key+ "+:_" + raw);
         return super.set(key,value);
     }
-    clear(){
-        scoreboard._removeObjective(this[nameSymbol]);
-        scoreboard._addObjective(this[nameSymbol],defaultType);
-        this[scoreSymbol] = getObjective(this[nameSymbol],defaultType);
-        super.clear();
-    }
-    hasAll(key){
-        if(super.has(key)) return true;
-        for (const {displayName} of this[scoreSymbol].getParticipants()) {
-            const theKey = displayName.split('+:_')[0];
-            super.set(theKey,JSON.parse(displayName.substring(theKey.length + 3).getModify()));
-            if(theKey === key) return true;
-        }
-        return false;
-    }
     *entriesAll(){
         for (const {displayName} of this[scoreSymbol].getParticipants()) {
             const key = displayName.split('+:_')[0];
@@ -79,40 +78,14 @@ export class Database extends Map{
             yield [key,value];
         }
     }
-    *keysAll(){
-        for (const [key,value] of this.entriesAll()) yield key;
-    }
-    *values(){
-        for (const [key,value] of this.entriesAll()) yield value;
-    }
-    forEachAll(callBack){
-        for (const [key,value] of this.entriesAll()) try{callBack(value,key,this);}catch{}
-    }
-    load(){
-        [...this.entriesAll()];
-        return this;
-    }
 }
-
-export class ExtendedDatabase extends Map{
+export class ExtendedDatabase extends DB{
     constructor(name,instantLoad=false){
-        if(typeof(name)!=='string') throw new TypeError('Name is not a string.');
-        if(name.length>12) throw new Error('Name for this DB is too large.');
-        if(name.match(/[\0]/g)?.length>0) throw new Error('Invalid character mach in the name of the Database.');
+        super(name,extendedType);
         const t = new Date().getTime();
-        super();
-        this[scoreSymbol] = getObjective(name,extendedType);
-        this[nameSymbol] = name;
-        if(instantLoad) this.load();
+        if(instantLoad) this.loadAll();
         console.warn('Load: ' + (new Date().getTime() - t) + ' ms');
     }
-    get name(){
-        return this[nameSymbol];
-    }
-    get objective(){
-        return this[scoreSymbol];
-    }
-    get sizeAll(){return [...this.entriesAll()].length??0;}
     delete(key){
         if (typeof(key)!=='string') throw new TypeError('key is not a string.');
         super.delete(key);
@@ -128,16 +101,16 @@ export class ExtendedDatabase extends Map{
     get(key){
         if (typeof(key)!=='string') throw new TypeError('key is not a string.');
         if (super.has(key)) return super.get(key);
-        let raw = "";
+        let raw = "", isLast = false;
         for (const identity of this[scoreSymbol].getParticipants()) {
             const {displayName,type} = identity;
-            if ((displayName.split('+:_')[0] == key) && type == 3) {
-                raw = displayName.substring(key.length + 3);
-                break;
-            }
+            if ((displayName.split('+:_')[0] === key) && type == 3) {
+                raw += displayName.substring(key.length + 4);
+                isLast = true;
+            } else if(isLast) break;
         }
         if(raw==="") return;
-        const data = JSOn.parse(raw.getModify());
+        const data = JSON.parse(raw.getModify());
         super.set(key,data);
         return data;
     }
@@ -145,46 +118,21 @@ export class ExtendedDatabase extends Map{
         if (typeof(key)!=='string') throw new TypeError('key is not a string.');
         if(key.match(/(\+\:\_)|["\\\n\r\t\0]/g)?.length>0) throw new Error('invalid key name: ' + key);
         const raw = JSON.stringify(value);
-        if(raw.length>fakeMaxLength) throw new Error(`value large (${raw.length} !< ${fakeMaxLength}), If you need to save more data per property use Extended Database.`);
         this.delete(key);
-        this[scoreSymbol].setScoreTarget(key+ "+:_" + raw);
-        return super.set(key,value);
-    }
-    clear(){
-        scoreboard._removeObjective(this[nameSymbol]);
-        scoreboard._addObjective(this[nameSymbol],extendedType);
-        this[scoreSymbol] = getObjective(this[nameSymbol],extendedType);
-        super.clear();
-    }
-    hasAll(key){
-        if(super.has(key)) return true;
-        for (const {displayName} of this[scoreSymbol].getParticipants()) {
-            const theKey = displayName.split('+:_')[0];
-            super.set(theKey,JSON.parse(displayName.substring(theKey.length + 3).getModify()));
-            if(theKey === key) return true;
+        for (let i = 1, Min = 0; i<65500; i++, Min+=fakeMaxLength) {
+            const Current = raw.substring(Min,Min + fakeMaxLength);
+            if (Current == "") break;
+            this[scoreSymbol].setScoreTarget(key + "+:_" + String.fromCharCode(i) + raw);
         }
-        return false;
+        return super.set(key,value);
     }
     *entriesAll(){
         for (const {displayName} of this[scoreSymbol].getParticipants()) {
             const key = displayName.split('+:_')[0];
-            const value = JSON.parse(displayName.substring(key.length + 3).getModify());
+            const value = JSON.parse(displayName.substring(key.length + 4).getModify());
             super.set(key,value);
             yield [key,value];
         }
-    }
-    *keysAll(){
-        for (const [key,value] of this.entriesAll()) yield key;
-    }
-    *values(){
-        for (const [key,value] of this.entriesAll()) yield value;
-    }
-    forEachAll(callBack){
-        for (const [key,value] of this.entriesAll()) try{callBack(value,key,this);}catch{}
-    }
-    load(){
-        [...this.entriesAll()];
-        return this;
     }
 }
 function getObjective(n,d = undefined){
