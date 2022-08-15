@@ -1,7 +1,6 @@
 import {Database, ExtendedDatabase} from './Database.js';
 import {world} from 'mojang-minecraft';
 
-
 world.events.beforeChat.subscribe(eventData=>{
     if(!eventData.message.startsWith('-')) return;
     switch (eventData.message.toLowerCase()) {

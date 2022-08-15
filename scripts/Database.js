@@ -127,11 +127,20 @@ export class ExtendedDatabase extends DB{
         return super.set(key,value);
     }
     *entriesAll(){
-        for (const {displayName} of this[scoreSymbol].getParticipants()) {
+        let database = {};
+        let isLast = false;
+        for (const identity of this[scoreSymbol].getParticipants()) {
+            const {displayName,type} = identity;
             const key = displayName.split('+:_')[0];
-            const value = JSON.parse(displayName.substring(key.length + 4).getModify());
-            super.set(key,value);
-            yield [key,value];
+            if (type == 3) {
+                database[key] = (database[key]??"") + displayName.substring(key.length + 4);
+            }
+        }
+        for(const [key,value] of Object.entries(database)){
+            console.warn(key,value.getModify());
+            const data = JSON.parse(value.getModify());
+            yield [key,data];
+            super.set(key,data);
         }
     }
 }
