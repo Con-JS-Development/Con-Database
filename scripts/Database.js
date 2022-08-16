@@ -8,7 +8,7 @@ class DB extends Map{
     constructor(name,type){
         if(typeof(name)!=='string') throw new TypeError('Name is not a string.');
         if(name.length>12) throw new Error('Name for this DB is too large.');
-        if(name.match(/[\0]/g)?.length>0) throw new Error('Invalid character mach in the name of the Database.');
+        if(name.match(/(\+\:\_)|["\\\n\r\t\0]/g)?.length>0) throw new Error('Invalid character mach in the name of the Database.');
         super();
         this[nameSymbol] = name;
         this[scoreSymbol] = getObjective(name,type);
@@ -47,12 +47,13 @@ export class Database extends DB{
     }
     get(key){
         if (typeof(key)!=='string') throw new TypeError('key is not a string.');
+        if(key.match(/(\+\:\_)|["\\\n\r\t\0]/g)?.length>0) throw new Error('invalid key name: ' + key);
         if (super.has(key)) return super.get(key);
         let raw = "";
         for (const identity of this[scoreSymbol].getParticipants()) {
             const {displayName,type} = identity;
             if ((displayName.split('+:_')[0] == key) && type == 3) {
-                raw = displayName.substring(key.length + 3);
+                raw = displayName.slice(key.length + 3);
                 break;
             }
         }
@@ -82,12 +83,11 @@ export class Database extends DB{
 export class ExtendedDatabase extends DB{
     constructor(name,instantLoad=false){
         super(name,extendedType);
-        const t = new Date().getTime();
         if(instantLoad) this.loadAll();
-        console.warn('Load: ' + (new Date().getTime() - t) + ' ms');
     }
     delete(key){
         if (typeof(key)!=='string') throw new TypeError('key is not a string.');
+        if(key.match(/(\+\:\_)|["\\\n\r\t\0]/g)?.length>0) throw new Error('invalid key name: ' + key);
         super.delete(key);
         let isLast = false;
         for (const identity of this[scoreSymbol].getParticipants()) {
@@ -100,12 +100,13 @@ export class ExtendedDatabase extends DB{
     }
     get(key){
         if (typeof(key)!=='string') throw new TypeError('key is not a string.');
+        if(key.match(/(\+\:\_)|["\\\n\r\t\0]/g)?.length>0) throw new Error('invalid key name: ' + key);
         if (super.has(key)) return super.get(key);
         let raw = "", isLast = false;
         for (const identity of this[scoreSymbol].getParticipants()) {
             const {displayName,type} = identity;
             if ((displayName.split('+:_')[0] === key) && type == 3) {
-                raw += displayName.substring(key.length + 4);
+                raw += displayName.slice(key.length + 4);
                 isLast = true;
             } else if(isLast) break;
         }
@@ -122,13 +123,27 @@ export class ExtendedDatabase extends DB{
         for (let i = 1, Min = 0; i<65500; i++, Min+=fakeMaxLength) {
             const Current = raw.substring(Min,Min + fakeMaxLength);
             if (Current == "") break;
-            this[scoreSymbol].setScoreTarget(key + "+:_" + String.fromCharCode(i) + raw);
+            this[scoreSymbol].setScoreTarget(key + "+:_" + String.fromCharCode(i) + Current);
+        }
+        return super.set(key,value);
+    }
+    async setAsync(key,value){
+        await null;
+        if (typeof(key)!=='string') throw new TypeError('key is not a string.');
+        if(key.match(/(\+\:\_)|["\\\n\r\t\0]/g)?.length>0) throw new Error('invalid key name: ' + key);
+        const raw = JSON.stringify(value);
+        this.delete(key);
+        await null;
+        for (let i = 1, Min = 0; i<65500; i++, Min+=fakeMaxLength) {
+            const Current = raw.substring(Min,Min + fakeMaxLength);
+            if (Current == "") break;
+            this[scoreSymbol].setScoreTarget(key + "+:_" + String.fromCharCode(i) + Current);
+            await null;
         }
         return super.set(key,value);
     }
     *entriesAll(){
         let database = {};
-        let isLast = false;
         for (const identity of this[scoreSymbol].getParticipants()) {
             const {displayName,type} = identity;
             const key = displayName.split('+:_')[0];
@@ -137,10 +152,9 @@ export class ExtendedDatabase extends DB{
             }
         }
         for(const [key,value] of Object.entries(database)){
-            console.warn(key,value.getModify());
             const data = JSON.parse(value.getModify());
-            yield [key,data];
             super.set(key,data);
+            yield [key,data];
         }
     }
 }
