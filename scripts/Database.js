@@ -1,7 +1,7 @@
 import { world, Scoreboard, ScoreboardObjective } from "mojang-minecraft"
 
 const scoreSymbol = Symbol('scores'), nameSymbol = Symbol('name'), dbTypeSymbol = Symbol('dbType');
-const overworld = world.getDimension('overworld'), {scoreboard} = world, fakeMaxLength = 31000;
+const overworld = world.getDimension('overworld'), {scoreboard} = world, fakeMaxLength = 32000;
 const defaultType = 'Type:default', extendedType = 'Type:extended';
 
 class DB extends Map{
@@ -65,6 +65,7 @@ export class Database extends DB{
     }
     set(key,value){
         if (typeof(key)!=='string') throw new TypeError('key is not a string.');
+        if (key.length>150) throw new Error('key is too large max length it 150 characters');
         if(key.match(/(\+\:\_)|["\\\n\r\t\0]/g)?.length>0) throw new Error('invalid key name: ' + key);
         const raw = JSON.stringify(value);
         if(raw.length>fakeMaxLength) throw new Error(`value large (${raw.length} !< ${fakeMaxLength}), If you need to save more data per property use Extended Database.`);
@@ -118,6 +119,7 @@ export class ExtendedDatabase extends DB{
     }
     set(key,value){
         if (typeof(key)!=='string') throw new TypeError('key is not a string.');
+        if (key.length>150) throw new Error('key is too large max length it 150 characters');
         if(key.match(/(\+\:\_)|["\\\n\r\t\0]/g)?.length>0) throw new Error('invalid key name: ' + key);
         const raw = JSON.stringify(value);
         this.delete(key);
