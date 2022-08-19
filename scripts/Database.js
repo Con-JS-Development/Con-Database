@@ -24,7 +24,7 @@ class DB extends Map{
     get sizeAll(){return [...this.entriesAll()].length??0;}
     get name(){return this[nameSymbol];}
     get objective(){return this[scoreSymbol];}
-    loadAll(){return [...this.entriesAll()];}
+    loadAll(){ [...this.entriesAll()]; return this}
     forEachAll(callBack){for (const [key,value] of this.entriesAll()) try{callBack(value,key,this);}catch{}}
     *keysAll(){for (const [key,value] of this.entriesAll()) yield key;}
     *valuesAll(){for (const [key,value] of this.entriesAll()) yield value;}
