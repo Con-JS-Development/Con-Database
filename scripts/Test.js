@@ -1,47 +1,39 @@
 import {Database, ExtendedDatabase} from './Database.js';
 import {world} from 'mojang-minecraft';
 
-const db = new ExtendedDatabase('YaMyItsName');
+const db = new Database('YaMyItsName2');
 world.events.beforeChat.subscribe(eventData=>{
     if(!eventData.message.startsWith('-')) return;
     const {onScreenDisplay} = eventData.sender;
     const t = new Date();
+    let n = "";
     switch (eventData.message.toLowerCase()) {
         case "-deleteall":
-            for (const [key,value] of db) {
-                db.delete(key);
-            }
+            for (const [key,value] of db) db.delete(key);
             break;
         case '-clear':
             db.clear();
             break;
         case '-add':
-            db.set('RandomKey: ' + (Math.random() * 100).toFixed(2),'SomeAditionalText ya it true: ' + Math.random());
+            for (let i = 0; i < 50; i++) db.set('RandomKey: ','SomeAditionalText ya its true.');
+            break;
+        case '-get':
+            for (let i = 0; i < 50; i++) db.get('RandomKey: ');
             break;
         case '-load':
-            db.loadAll();
+            for (let i = 0; i < 50; i++) db.loadAll();
             break;
         case '-foreach':
-            for (const [key,value] of db.entriesAll()) {
-                onScreenDisplay.setActionBar(key + " " + value);
-            }
+            for (let i = 0; i < 50; i++) for (const [key,value] of db.entriesAll()) n = v;
             break;
         case '-keys':
-            for (const key of db.keysAll()) {
-                onScreenDisplay.setActionBar(key);
-            }
+            for (let i = 0; i < 50; i++) for (const v of db.keysAll()) n = v;
             break;
         case '-values':
-            for (const key of db.valuesAll()) {
-                onScreenDisplay.setActionBar(key);
-            }
-            break;
-        case '-console':
-            for (let i = 0; i<500; i++) {
-                eventData.sender.runCommand('tellraw @s ' + JSON.stringify({rawtext:[{text:"times: " +i}]}));
-            }
+            for (let i = 0; i < 50; i++) for (const v of db.valuesAll()) n = v;
             break;
         default:
+            console.warn('InvalidCommand');
             break;
     }
     console.warn('Perform: ' + (new Date() - t) + 'ms');

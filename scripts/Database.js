@@ -12,6 +12,7 @@ class DB extends Map{
         super();
         this[nameSymbol] = name;
         this[scoreSymbol] = getObjective(name,type);
+        if(this[scoreSymbol].displayName !== type) throw new TypeError(`(${name}) cant be loaded as "${type}" becouse is type of "${this[scoreSymbol].displayName}"`);
         this[dbTypeSymbol] = type;
     }
     clear(){
@@ -158,9 +159,9 @@ export class ExtendedDatabase extends DB{
         }
     }
 }
-function getObjective(n,d = undefined){
+function getObjective(n,d){
     const c = scoreboard.getObjective(n);
-    if(c!==null) if(c.displayName===d||d===undefined) return c;
+    if(c!==null) return c;
     try {
         scoreboard._addObjective(n,d);
         return getObjective(n,d);
