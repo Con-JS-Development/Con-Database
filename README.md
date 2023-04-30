@@ -1,63 +1,127 @@
-# Database - ExtendedDatabase
-The runtime the database methods are the same as the ([Map class](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map)) ones.
-What do runtime methods mean? These are methods to manipulate the database with the loaded values. so if the database is not loaded when the has() method is called, false will be returned. but if you want direct access, you need to either load the entire database (not recommended) or use methods (All). The All methods are bound to real values, which means that the database does not have to be loaded and data from the native database can be cleaned directly from them, but it is much slower.
-### RunTime Methods:
-```ts
-has(key: string): boolean //if loaded property exists
+This documentation describes the `ScoreboardDB`, `AsyncDatabase`, and `ScoreboardDatabase` classes. It also using these classes from [Con-Module](https://github.com/Con-JS-Development/Con-Module):
+- The `AsyncSemaphore` from ["Con-Module/Utils/AsyncSemaphore"](https://github.com/Con-JS-Development/Con-Module/blob/main/Docs/con-utils/AsyncSemaphore.md) ([source](https://github.com/Con-JS-Development/Con-Module/blob/main/con-lib/con-utils/Semaphore.js)).
 
-clear(): void //if delete all of the properties loaded and unloaded
+## Internal ScoreboardDB
 
-keys(): Generator<string> //returning loaded keys
+`ScoreboardDB` is a class that extends [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) and provides an interface to interact with a scoreboard objective in Minecraft. It allows you to store key-value pairs in a scoreboard objective and retrieve them later.
 
-values(): Generator<any> //returning loaded values
+### Create
 
-entries(): Generator<[string, any]> //returning loaded entries
-
-forEach(callback: delegate(value: any, key: string, map: (ExtendedDatabase | Database))=>void): void //for each all loaded entries
-
-[Symbol.iterator](): Generator<[string, any]> //returning loaded entires
+```js
+ScoreboardDB.create(objective: string | ScoreboardObjective, createNew?: boolean);
 ```
 
-### Native Methods: *( Methods - All )*
-```ts
-entriesAll(): Generator<[key: string, value: any]> //for each all saved entries and load them in to the database
+Creates a new `ScoreboardDB` instance.
 
-keysAll(): Generator<string> //for each all entries and load them in to the database but returns only keys
+- `objective`: The scoreboard objective to open. Can be a string or a `ScoreboardObjective` instance.
+- `createNew`: Optional. Whether to create a new scoreboard objective if it doesn't exist. Defaults to `true`.
 
-valuesAll(): Generator<any>//for each all entries and load them in to the database but returns only values
-
-hasAll(): boolean//for each all entries and load them until correct key has not founed. (dont load all database.)
-
-forEachAll(callback: delegate(value: any, key: string, map: (ExtendedDatabase | Database))=>void): void //for each all entries loaded and unloaded.
-
-loadAll(): this //(instant load - freezing - not recomended) load and return this database (not recomended for huge database with lot of entries) use entriesAll to load DB in the async method.
-
-delete(): boolean //Overrided method from the (Map) class. delete value  with specific key;
-
-
-get(key: string): any | undefined //Overrided method wrom the (Map) if property loaded return instantly loaded value if not it will try to found property and load it if not then returns undefined
-set(key: string, value: any): void //Overrided method from (Map) it will alway reset the property to the current value (most slower method);
-
-
-//!Method is only eviable for ExtendedDatabase! 
-setAsync(key: string, value: any): Promise<void> //!Method is only eviable for ExtendedDatabase! same as sync Set but its await null alway per 31000 chars to make work in progress with less lags
-```
 ### Properties
-```ts
-readonly name: string //name of the database
-readonly objective: ScoreboardObjective //the netive soreboard of the databse
-readonly size: string //return count of the loaded properties
-readonly sizeAll: number //(slow - not recomended) return all loaded and unloaded prperties count;
+
+#### participants
+
+```js
+scoreboardDB.participants: Map<string, ScoreboardIdentity>;
 ```
 
-## Database *class*
- - Max 31000 chars for value per property
- - Max 1000 chars for the key
- - Max 32k Properties per one Database
- - Max 9 900 000 000 chars per Database
-  
-  
-## ExtendedDatabase *class*
- - Max (31k * 32k - 9 900 000 000) chars for value per property
- - Max 1000 chars for the key
- - Max (9 900 000 000) chars per ExtededDatabase
+A read-only property that returns the participants of the scoreboard objective.
+
+#### id
+
+```js
+scoreboardDB.id: string;
+```
+
+A read-only property that returns the id of the scoreboard objective.
+
+#### scoreboardObjective
+
+```js
+scoreboardDB.scoreboardObjective: ScoreboardObjective;
+```
+
+A read-only property that returns the scoreboard objective.
+
+### Methods
+
+#### open
+
+```js
+ScoreboardDB.open(objective: string | ScoreboardObjective): ScoreboardDB;
+```
+
+Opens a scoreboard objective and returns a `ScoreboardDB` instance.
+
+- `objective`: The scoreboard objective to open. Can be a string or a `ScoreboardObjective` instance.
+- Returns: The `ScoreboardDB` instance.
+
+#### delete
+
+```js
+scoreboardDB.delete(key: string): boolean;
+```
+
+Deletes a key from the database.
+
+- `key`: The key to delete from the database.
+- Returns: Whether the key was deleted.
+
+#### clear
+
+```js
+scoreboardDB.clear(): void;
+```
+
+Clears the database.
+
+## Public AsyncDatabase
+
+`AsyncDatabase` is a class that extends `ScoreboardDB` and provides an asynchronous interface to interact with a scoreboard objective in Minecraft. It allows you to store key-value pairs in a scoreboard objective and retrieve them later asynchronously. It is more performant than the synchronous version (`ScoreboardDatabase`) but can be slower when setting values for the same key in one tick.
+
+### Methods
+
+#### set
+
+```js
+async asyncDatabase.set(key: string, value: any): Promise<void>;
+```
+
+Sets a value for a key in the database asynchronously.
+
+- `key`: The key to set.
+- `value`: The value to set.
+
+### Properties
+
+#### semaphores
+
+```js
+asyncDatabase.semaphores: Map<string, AsyncSemaphore>;
+```
+
+A read-only property that returns the semaphores of the database.
+
+## Public ScoreboardDatabase
+
+`ScoreboardDatabase` is a class that extends `ScoreboardDB` and provides an interface to interact with a scoreboard objective in Minecraft. It allows you to store key-value pairs in a scoreboard objective and retrieve them later synchronously.
+
+### Methods
+
+#### set
+
+```js
+scoreboardDatabase.set(key: string, value: any): this;
+```
+
+Sets a value for a key in the database synchronously.
+
+- `key`: The key to set.
+- `value`: The value to set.
+- Returns: The `ScoreboardDatabase` instance.
+
+## Requirements
+ - Server Module:
+    - `1.2.0-beta`
+    - `1.3.0-beta`
+
+### [MIT License](./LICENSE)
