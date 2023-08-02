@@ -1,6 +1,10 @@
-import { system, world } from "@minecraft/server";
-import { JsonDatabase, NBTDatabase } from "./utils";
+import { EntityEquipmentInventoryComponent } from "@minecraft/server";
 
-const database = new NBTDatabase("Josh", "EndTickSave");
+const ItemsToInclude = [
+    "minecraft:sword",
+];
 
-database.clear();
+function CheckEquipment(player){
+    const equipment = player.getComponent(EntityEquipmentInventoryComponent.componentId);
+
+}
