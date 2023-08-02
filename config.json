@@ -1,0 +1,21 @@
+{
+	"$schema": "https://raw.githubusercontent.com/Bedrock-OSS/regolith-schemas/main/config/v1.1.json",
+	"author": "conaster",
+	"name": "Database-Event",
+	"packs": {
+		"behaviorPack": "./packs/BP"
+	},
+	"regolith": {
+		"dataPath": "./packs/data",
+		"filterDefinitions": {},
+		"profiles": {
+			"default": {
+				"export": {
+					"readOnly": false,
+					"target": "preview"
+				},
+				"filters": []
+			}
+		}
+	}
+}

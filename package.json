@@ -1,0 +1,14 @@
+{
+  "name": "con-database",
+  "main": "database.js",
+  "types": "database.d.ts",
+  "type": "module",
+  "files": [
+    "database.js",
+    "database.d.ts"
+  ],
+  "dependencies": {
+    "@minecraft/server": "^1.5.0-beta.1.20.20-preview.20",
+    "@minecraft/server-ui": "^1.2.0-beta.1.20.20-preview.20"
+  }
+}
