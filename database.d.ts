@@ -17,7 +17,7 @@ declare class Stream extends DataView{
     static toString(stream: Stream, base?: StringBase): string
     toString(base?: StringBase): string
 }
-class BinaryStreamWriter extends Stream{
+declare class BinaryStreamWriter extends Stream{
     constructor(stream: IStreamType)
     writeBytes(buffer: ArrayBuffer,length?:number ): number
     writeString(text: string, base?: StringBase): number
@@ -32,7 +32,7 @@ class BinaryStreamWriter extends Stream{
     writeFloat64(num: number): number
     static fromString(text: string, options?: {bufferLength?: number, base?:StringBase},...params: any): BinaryStreamWriter
 }
-class BinaryStreamReader extends Stream{
+declare class BinaryStreamReader extends Stream{
     constructor(stream: IStreamType)
     readBytes(length?: number): Uint8Array
     readString(length: number, base?: StringBase):string
@@ -47,8 +47,8 @@ class BinaryStreamReader extends Stream{
     readFloat64():number
     static fromString(text: string, options?: {bufferLength?: number, base?:StringBase},...params: any): BinaryStreamReader
 }
-class EndOfStreamError extends Error{}
-enum NBTTypes {
+declare class EndOfStreamError extends Error{}
+declare enum NBTTypes {
     "EndOfCompoud"=0,
     "Compoud"=1,
     "Array"=2,
@@ -61,7 +61,7 @@ enum NBTTypes {
     "Empty"=9,
     "Boolean"=10
 }
-class NBTStreamWriter extends BinaryStreamWriter{
+declare class NBTStreamWriter extends BinaryStreamWriter{
     constructor(stream: IStreamType, options?: object | NBTStreamWriter)
     protected __options__: NBTWriterOptions;
     writeTypedArray<t>(array: Array<t>): number
@@ -73,7 +73,7 @@ class NBTStreamWriter extends BinaryStreamWriter{
     writeType(type: NBTTypes): number
     static fromString(text: string, options?: {bufferLength?: number, base?:StringBase},...params: any): NBTStreamWriter
 }
-class NBTStreamReader extends BinaryStreamReader{
+declare class NBTStreamReader extends BinaryStreamReader{
     constructor(stream: IStreamType, options?: object | NBTReaderOptions)
     protected __options__: NBTReaderOptions;
     readTypedArray(): Array<any>
@@ -85,7 +85,7 @@ class NBTStreamReader extends BinaryStreamReader{
     readType(): NBTTypes
     static fromString(text: string, options?: {bufferLength?: number, base?:StringBase},...params: any): NBTStreamReader
 }
-const NBT: {
+declare const NBT: {
     ReadNBT(stream: NBTStreamReader): any
     WriteNBT(data: any, stream: NBTStreamWriter, type?: NBTTypes): number
     getType(data: any): NBTTypes
@@ -96,7 +96,7 @@ const NBT: {
 }
 type WriterCall = (stream: NBTStreamWriter, data: any)=>number
 type ReaderCall = (stream: NBTStreamReader)=>any
-const defaultWriters: {
+declare const defaultWriters: {
     [NBTTypes.Compoud]:WriterCall,
     [NBTTypes.Empty]:WriterCall,
     [NBTTypes.Array]:WriterCall,
@@ -108,7 +108,7 @@ const defaultWriters: {
     [NBTTypes.Double]:WriterCall,
     [NBTTypes.TypedArray]:WriterCall
 }
-const defualtReaders: {
+declare const defualtReaders: {
     [NBTTypes.Compoud]:ReaderCall,
     [NBTTypes.Empty]:ReaderCall,
     [NBTTypes.Array]:ReaderCall,
@@ -124,10 +124,10 @@ declare class NBTStreamOptions{
     nbtTypes: object & NBTTypes
     getType:(data: any)=>NBTStreamOptions["nbtTypes"][keyof NBTStreamOptions["nbtTypes"]]
 }
-class NBTWriterOptions extends NBTStreamOptions{
+declare class NBTWriterOptions extends NBTStreamOptions{
     writers: ReturnType<typeof NBT["createNewWriters"]>;
 }
-class NBTReaderOptions extends NBTStreamOptions{
+declare class NBTReaderOptions extends NBTStreamOptions{
     readers: ReturnType<typeof NBT["createNewReaders"]>;
 }
 
@@ -147,7 +147,7 @@ export enum ChangeAction {
     Remove=1
 }
 /**@extends {Map<string,any>}*/
-class ScoreboardDatabaseManager extends Map<string,any>{
+declare class ScoreboardDatabaseManager extends Map<string,any>{
     private _saveMode_: DatabaseSavingModes;
     private hasChanges: boolean;
     readonly maxLength: number;
@@ -174,5 +174,5 @@ export class JsonDatabase extends ScoreboardDatabaseManager{}
 export class NBTDatabase extends ScoreboardDatabaseManager{}
 export class CustomDatabase extends ScoreboardDatabaseManager{
     constructor(parser: {parse:(data:string)=>any,stringify:(data: any)=>string}, objective: string | ScoreboardObjective, saveMode: DatabaseSavingModes);
-    constructor(objective: string | ScoreboardObjective, saveMode: DatabaseSavingModes.EndTickSave, interval?: number);
+    constructor(parser: {parse:(data:string)=>any,stringify:(data: any)=>string}, objective: string | ScoreboardObjective, saveMode: DatabaseSavingModes.EndTickSave, interval?: number);
 }
