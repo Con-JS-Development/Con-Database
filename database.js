@@ -428,6 +428,9 @@ NBTReaderOptions.prototype.readers = defualtReaders;
 // DATABASE.JS
 ///////////////////////////////////////////////////
 const {scoreboard} = world, {FakePlayer} = ScoreboardIdentityType;
+
+const databases = new Map();
+
 const split = "\n_`Split`_\n";
 function endTickCall(callback){
     system.run(()=>system.run(()=>system.run(callback)));
@@ -481,13 +484,14 @@ class ScoreboardDatabaseManager extends Map{
     _saveMode_;
     /**@private */
     hasChanges = false;
+    /**@private */
+    _loadingPromise_;
     /**@readonly */
     get maxLength(){return 30e3;}
     /**@private @type {ScoreboardObjective}*/
     _scoreboard_;
     /**@protected @type {Map<string,string|ScoreboardIdentity|Entity>} */
     _source_;
-    _onHandleLost_;
     /**@protected @readonly @type {{stringify:(data: any)=>string,parse:(data: string): any}} */
     get _parser_(){return JSON;}
     get savingMode(){return this._saveMode_;}
@@ -500,6 +504,7 @@ class ScoreboardDatabaseManager extends Map{
         if(!objective) throw new RangeError("Firt parameter si not valid: " + objective);
         if(typeof objective !== "string" && !objective instanceof ScoreboardObjective) throw new RangeError("Firt parameter si not valid: " + objective);
         this._scoreboard_ = typeof objective === "string"?(scoreboard.getObjective(objective)??scoreboard.addObjective(objective,objective)):objective;
+        if(databases.has(this.id)) return databases.get(this.id);
         this._nameId_ = this.id;
         this._source_ = new Map();
         this._changes_ = new Map();
@@ -514,6 +519,7 @@ class ScoreboardDatabaseManager extends Map{
                 }
             },this.interval);
         }
+        databases.set(this.id,this);
     }
     load(){
         if(this._loaded_) return this;
@@ -527,17 +533,21 @@ class ScoreboardDatabaseManager extends Map{
         this._loaded_=true;
         return this;
     }
-    async loadAsync(){
-        if(this._loaded_) return this;
-        for (const participant of this._scoreboard_.getParticipants()) {
-            const {displayName,type} = participant;
-            if(type !== FakePlayer) continue;
-            const [name,data] = displayName.split(split);
-            this._source_.set(name,participant);
-            super.set(name,this._parser_.parse(data));
-        }
-        this._loaded_=true;
-        return this;
+    loadAsync(){
+        if(this._loaded_) return this._loadingPromise_??Promise.resolve(this);
+        const promise = (async ()=>{
+            for (const participant of this._scoreboard_.getParticipants()) {
+                const {displayName,type} = participant;
+                if(type !== FakePlayer) continue;
+                const [name,data] = displayName.split(split);
+                this._source_.set(name,participant);
+                super.set(name,this._parser_.parse(data));
+            }
+            this._loaded_=true;
+            return this;
+        })();
+        this._loadingPromise_ = promise;
+        return promise;
     }
     /**@inheritdoc */
     set(key, value){
@@ -554,6 +564,7 @@ class ScoreboardDatabaseManager extends Map{
         this._onChange_(key,null,ChangeAction.Remove);
         return super.delete(key);
     }
+    /**@inheritdoc */
     clear(){
         if(!this._loaded_) throw new ReferenceError("Database is not loaded");
          for (const [key,value] of this.entries()) this.delete(key,value);
@@ -569,6 +580,9 @@ class ScoreboardDatabaseManager extends Map{
     get id(){return this._scoreboard_.id;}
     /**@readonly @returns {boolean} */
     get loaded(){return this._loaded_;}
+    /**@readonly @returns {DefualtJsonType} */
+    get type(){return "DefualtJsonType";}
+    get loadingAwaiter(){return this._loadingPromise_??this.loadAsync();}
     rebuild(){
         if(this.objective?.isValid()) return;
         const newScores = scoreboard.addObjective(this._nameId_,this._nameId_);
@@ -595,15 +609,19 @@ class ScoreboardDatabaseManager extends Map{
         return this;
     }
 }
-export class JsonDatabase extends ScoreboardDatabaseManager{}
+export class JsonDatabase extends ScoreboardDatabaseManager{
+    get type(){return "JsonType";}
+}
 export class NBTDatabase extends ScoreboardDatabaseManager{
     get _parser_() {return NBT;};
+    get type(){return "NBTType";}
 }
 export class CustomDatabase extends ScoreboardDatabaseManager{
     constructor(parser,...params){
         super(params);
         this._parser_ = parser;
     }
+    get type(){return "CustomType";}
 }
 function generateRandomString(length) {
     let result = '';
