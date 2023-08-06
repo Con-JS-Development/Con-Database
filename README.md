@@ -9,12 +9,13 @@ Each of these database types supports all possible [Map](https://developer.mozil
  - entries(): generator of all values [key, value]
  - forEach(callBack: (value, key, this)=>void): for each all elements and call provided function for that
  - get(key: string): returns value for specific key
- - set(key: string, value: any): sets new value for provided key
+ - set(key: string: value: any): sets new value for provided key
+ - has(key: string): returns true when database has a value for that key
  - keys(): returns iterbale of keys
  - values(): returns iterable of values
 ### Additional Methods
  - load(): will load database from provided scoreboard
- - loadAsync(): will load database asynchonously from profived scoreboard
+ - loadAsync(): will load database asynchonously from provided scoreboard
  - rebuild(): when database is deleted by user in the world you can call rebuild to save loaded data without lost
  - rebuildAsync(): same as rebuild() but asyncronouse
 ### Additional Properties
@@ -32,12 +33,20 @@ Each of these database types supports all possible [Map](https://developer.mozil
  - NBTDatabase, is saving data in NBT form. (Fast/HardToRead)
  - Custom, is saving data in format of provided parser (undefined/undefined)
 
+### Dual instance security!
+```js
+const myDB1 = new JsonDatabase("sameId");
+const myDB2 = new NBTDatabase("sameId"); //returns JsonDatabase because database with same id "sameId" was already created.
+
+console.log(myDB1 === myDB2); //true the very same instance!
+``` 
+
 ### Example
 ```js
 // INITIALIZATION OF DATABASE
 const myDB = new JsonDatabase("MyIdentifier").load();
-const myDB = new NBTDatabase("MyIdentifier").load();
-const myDB = new CustomDatabase(JSON /* JSON is parser */,"MyIdentifier").load();
+const myDB = new NBTDatabase("MyIdentifier2").load();
+const myDB = new CustomDatabase(JSON /* JSON is parser */,"MyIdentifier3").load();
 
 //using (get/set) to (read/write) data (from/to) database
 const worldOpenedCount = myDB.get("openCount")??0;
