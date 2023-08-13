@@ -487,7 +487,7 @@ class ScoreboardDatabaseManager extends Map{
     /**@private */
     _loadingPromise_;
     /**@readonly */
-    get maxLength(){return 32e3;}
+    get maxLength(){return 31e3;}
     /**@private @type {ScoreboardObjective}*/
     _scoreboard_;
     /**@protected @type {Map<string,string|ScoreboardIdentity|Entity>} */
