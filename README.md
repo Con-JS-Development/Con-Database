@@ -1,8 +1,8 @@
 # Con-Databases
-This package contains three types of databases, JsonDatabase, NBTDatabase, CustomDatabase. 
-Each of these database types supports all possible [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) class operations from ECMAScript, which means.
+New version of JsonDatabase is based on dynamic properties. 
+This database supports all possible [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) class operations from ECMAScript.
 - [Starting Using Con-Databases](./docs/HOW_TO_SETUP.md)
-- [Using CustomDatabase](./docs/CUSTOM_DATABASE.md)  *(Soon)*
+- [Basic API documentation](./docs/API-Documentation.md)
 
 ### Inherited from Map
  - size: number of properties
@@ -16,58 +16,68 @@ Each of these database types supports all possible [Map](https://developer.mozil
  - has(key: string): returns true when database has a value for that key
  - keys(): returns iterbale of keys
  - values(): returns iterable of values
-### Additional Methods
- - load(): will load database from provided scoreboard
- - loadAsync(): will load database asynchonously from provided scoreboard
- - rebuild(): when database is deleted by user in the world you can call rebuild to save loaded data without lost
- - rebuildAsync(): same as rebuild() but asyncronouse
-### Additional Properties
- - objective: returns scoreboard objective what is database binded to
- - id: returns id of the objective
- - loaded: returns boolean, true when database is loaded
- - maxLength: max size of key and value after parsed via parse
- - savingMode: mode when your database is saving your data after change
-   - OneTimeSave: Saving after value was changed
-   - EndTickSave: Saving at the end of the tick, ater any changes occurs
-   - IntervalTick: Saving Every interval if changes occurs
-
-### Database Types
- - JsonDatabase, is saving data in JSON form. (SuperFast/EasyToRead)
- - NBTDatabase, is saving data in NBT form. (Fast/HardToRead)
- - Custom, is saving data in format of provided parser (undefined/undefined)
+### Additional Methods & Properties
+ - dispose(): dispose the current instance of database anc clears it chache, saved data are not lost!
+ - isValid(): returns true when source is valid and database is not disposed
+ - isDisposed: property returns if database is disposed
+# Other examples
 
 ### Dual instance security!
 ```js
-const myDB1 = new JsonDatabase("sameId");
-const myDB2 = new NBTDatabase("sameId"); //returns JsonDatabase because database with same id "sameId" was already created.
+const myDB1 = new JsonDatabase(world,"sameId");
+const myDB2 = new WorldDatabase("sameId"); //returns JsonDatabase because database with same id "sameId" and same source was already created.
 
 console.log(myDB1 === myDB2); //true the very same instance!
 ``` 
 
 ### Example
 ```js
-// INITIALIZATION OF DATABASE
-const myDB = new JsonDatabase("MyIdentifier").load();
-const myDB = new NBTDatabase("MyIdentifier2").load();
-const myDB = new CustomDatabase(JSON /* JSON is parser */,"MyIdentifier3").load();
+import {world} from "@minecraft/server";
+import {JsonDatabase} from "./con-database.js";
 
-//using (get/set) to (read/write) data (from/to) database
-const worldOpenedCount = myDB.get("openCount")??0;
-myDB.set("openCount", ++worldOpenedCount);
+const db = new WorldDatabase("my id");
 
-//getting all data saved in database
-for(const [key, value] of myDB.entries()){
-    console.warn(key, value);
+db.set("key1", "value1");
+db.set("key2", {isComplexObject: true});
+
+console.warn(db.get("key1")); // "value1"
+
+db.delete("key1");
+
+console.warn(db.get("key1")); // undefined
+
+// Iterating over the map using for loop
+for (const [key, value] of db) {
+  console.warn(`${key} = ${value}`);
 }
 
-//clearing database
-myDB.clear();
+db.clear();
 
-//removing specific value
-myDB.delete("Josh");
+// Getting the size of the map
+console.warn(db.size); // 0
+```
+## Example saving deaths for each player
+Each key is unique to its player because key include players id, so database keys looks like
+```
+5648463deaths
+6843684deaths
+6545463deaths
+```
+Code
+```js
+import {world} from "@minecraft/server";
+import {WorldDatabase} from "databases.js";
 
-//forEaching every element in scoreboard
-myDB.forEach((value,key)=>{
-    console.warn(key, value);
-});
+const stats = new WorldDatabase("playerStats");
+
+world.afterEvents.entityDie.subscribe(({deadEntity})=>
+    setDeaths(deadEntity,getDeaths(deadEntity) + 1);
+,{entityTypes:["mineraft:player"]});
+
+
+function getDeaths(player){ 
+    return stats.get(player.id + "deaths")??0;}
+
+function setDeaths(player,deaths){ 
+    stats.set(player.id + "deaths",deaths);}
 ```
