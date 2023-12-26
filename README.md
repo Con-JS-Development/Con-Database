@@ -3,6 +3,7 @@ New version of JsonDatabase is based on dynamic properties.
 This database supports all possible [Map](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map) class operations from ECMAScript.
 - [Starting Using Con-Databases](./docs/HOW_TO_SETUP.md)
 - [Basic API documentation](./docs/API-Documentation.md)
+- [Using DynamicTables](./docs/Using-DynamicTable.md)
 
 ### Inherited from Map
  - size: number of properties
@@ -66,9 +67,9 @@ Each key is unique to its player because key include players id, so database key
 Code
 ```js
 import {world} from "@minecraft/server";
-import {WorldDatabase} from "databases.js";
+import { JsonDatabase } from "databases.js";
 
-const stats = new WorldDatabase("playerStats");
+const stats = new JsonDatabase("playerStats");
 
 world.afterEvents.entityDie.subscribe(({deadEntity})=>
     setDeaths(deadEntity,getDeaths(deadEntity) + 1);
