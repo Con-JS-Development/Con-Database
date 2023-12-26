@@ -1,4 +1,5 @@
-import { SerializableKinds } from "./con-database";
+import { system, world } from "@minecraft/server";
+import { SerializableKinds, JsonDatabase } from "./con-database";
 import { DynamicTable, Serializer } from "./con-database";
 
 
@@ -32,3 +33,12 @@ table.set("key-the-test", new MyClassWithMethods("warn-id", "My custom message")
 
 
 table.get("key-the-test").warn(); //warn method from MyClasswithMethods
+const jsDB = new JsonDatabase("the id");
+jsDB.set("Lmao","adfasdfsa".repeat(600));
+jsDB.set("Some test", {asd:"asdfasdf",asds:{asdfasdfa:"asdfasdf"}});
+for (const [k,v] of jsDB) {
+    console.warn(k,v);
+}
+jsDB.clear();
+DynamicTable.ClearAll();
+system.runTimeout(()=>console.warn(world.getDynamicPropertyTotalByteCount()), 3);
