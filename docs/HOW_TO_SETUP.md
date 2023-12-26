@@ -22,7 +22,7 @@ Then download your required files
 Now you can just use, save and load your data
 ```js
 
-const database = new WorldDatabase("my_database_id");
+const database = new JsonDatabase("my_database_id");
 
 database.set("some key", "string data");
 database.set("some key2", 645654);
