@@ -16,7 +16,7 @@
 		}
 	],
 	"dependencies": [
-		{"module_name": "@minecraft/server","version": "1.7.0"}
+		{"module_name": "@minecraft/server","version": "1.9.0-beta"}
 	],
 	"capabilities": ["script_eval"]
 }
