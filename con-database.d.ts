@@ -43,7 +43,7 @@ namespace Serializer {
     function registrySerializer<K extends string>(kind: K, serializer: (object: any)=>Generator<string>, deserializer: (source: Deserializer<string>)=>void): K;
     function getSerializer(kind: string): null | ((object: any)=>Generator<string>)
     function getDeserializer(kind: string): ((source: Deserializer<string>)=>void) | null
-    function setSerializableClass(construct: new (...any: any[])=>any, kind: string, serializer: (object: any)=>Generator<string>, deserializer: (source: Deserializer<string>)=>void): void
+    function setSerializableClass<T>(construct: new (...any: any[])=>T, kind: string, serializer: (object: T)=>Generator<string>, deserializer: (source: Deserializer<string>)=>T): void
     function getKindFromClass(construct: new (...any: any[])=>any): string | null;
     function getSerializerKinds(): IterableIterator<string>
     function getSerializers(kind: string): {serializer: (object: any)=>Generator<string>, deserializer: (source: Deserializer<string>)=>void}

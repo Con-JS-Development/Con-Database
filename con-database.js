@@ -7,6 +7,7 @@ const DYNAMIC_DB_PREFIX = "\u1221\u2112";
 const ROOT_CONTENT_TABLE_UUID = "c0211201-0001-4001-8001-4f90af596647";
 const STRING_LIMIT = 32e3;
 const TABLE_STRING_LENGTH = 31e3;
+const GENERATOR_DESERIALIZER_SYMBOL = Symbol("DESERIALIZER");
 const eP = {
     gDP: eGDP,
     sDP: eSDP,
@@ -209,7 +210,6 @@ class DynamicProxy extends JsonDatabase{
                 return false;
             },
             deleteProperty(t,p){
-                console.warn("DELETE: ",p);
                 if(typeof p === "string") return t.delete(p);
                 return false;
             },
@@ -308,7 +308,14 @@ const Serializer = {
         return {...data};
     },
     setSerializableClass(construct, kind, serializer, deserializer){
-        Serializer.registrySerializer(kind, serializer, deserializer);
+        if(typeof serializer !== "function" || typeof deserializer !== "function") throw new TypeError("Serializer or deserializer is not a function");
+        Serializer.registrySerializer(kind, function(obj){
+            if(obj == null) throw new TypeError("Null or Undefined is not possible to serialize.");
+            return serializer(obj);
+        }, function(obj){
+            if(obj[GENERATOR_DESERIALIZER_SYMBOL] !== true) throw new TypeError("Null or Undefined is not possible to serialize.");
+            return deserializer(obj);
+        });
         Serializer.setSerializableKind(construct.prototype,kind);
     },
     getKindFromClass(construct){
@@ -365,9 +372,16 @@ const DATABASE_MANAGER = {
                 }
                 source.set(rootRef, JSONWritable({length:newLength.toString(36),kind},headerData));
             }
-        } finally {
-            for (let i = newLength; i < oldLength; i++) source.delete(prefix + i); 
             return newLength;
+        }
+        catch(er){
+            Object.setPrototypeOf(er, DataCoruptionError.prototype);
+            er.source = source;
+            er.rootKey = rootRef;
+            throw er;
+        }
+        finally {
+            for (let i = newLength; i < oldLength; i++) source.delete(prefix + i);
         }
     },
     deserialize(rootRef, source, header = undefined){
@@ -418,7 +432,9 @@ const DATABASE_MANAGER = {
         return true;
     }
 }
+
 Object.defineProperties(DATABASE_MANAGER.deserializer.prototype,Object.getOwnPropertyDescriptors({
+    [GENERATOR_DESERIALIZER_SYMBOL]: true,
     return(){
         return {done:true};
     },
@@ -442,8 +458,6 @@ Object.defineProperties(DATABASE_MANAGER.deserializer.prototype,Object.getOwnPro
         return DESERIALIZER_INFO.get(this).kind;
     }
 }));
-
-
 class DynamicTable extends Map{
     /**@readonly */
     static get KIND(){return "c0211201-0001-4002-8101-4f90af596647";}
@@ -709,7 +723,6 @@ export const registryAPISerializers = ()=>{
     for (const key in ItemStackSupportLevel) {
         if (Object.hasOwnProperty.call(ItemStackSupportLevel, key)) {
             const element = ItemStackSupportLevel[key];
-            console.warn(key, !!element);
         }
     }
     const ItemStackComponentManager = {

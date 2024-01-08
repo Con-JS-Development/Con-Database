@@ -1,44 +1,69 @@
-import { system, world } from "@minecraft/server";
-import { SerializableKinds, JsonDatabase } from "./con-database";
+import { system, world, Container } from "@minecraft/server";
+import { SerializableKinds } from "./con-database";
 import { DynamicTable, Serializer } from "./con-database";
+import { APISerializableKinds, registryAPISerializers } from "./con-database";
 
 
-class MyClassWithMethods {
-    constructor(id, message){
-        this.id = id;
-        this.message = message;
+registryAPISerializers();
+class ContainerMetadata{
+    /**@param {Container} container  */
+    static FromContainer(container){
+        const meta = new ContainerMetadata();
+        for (let i = 0; i < container.size; i++) {
+            const item = container.getItem(i);
+            if(item){
+                meta.items.push(item);
+                meta.slots.push(i);
+            }
+        }
+        return meta;
     }
-    warn(){
-        console.warn(this.id,this.message);
+    static SaveToContainer(container, meta){
+        for (const slot of meta.slots) {
+            container.setItem(slot, meta.items.shift());
+        }
+    }
+    constructor(){
+        this.items = [];
+        this.slots = [];
     }
 }
 Serializer.setSerializableClass(
-    MyClassWithMethods,
-    "custom-kind-id",
-    function({id,message}){ // serialization function, called when DynamicTable.set() 
+    ContainerMetadata,
+    "container-metedata-serialization-id", //do not change this id its unique ti your serializer
+    function* ({items, slots}){
         const objectSerializer = Serializer.getSerializer(SerializableKinds.Object); 
-        return objectSerializer({id,message}); //basic serialization as poor object
+        yield * objectSerializer(slots); //saving manifest info
+        const itemSerialzer = Serializer.getSerializer(APISerializableKinds.ItemStack);
+        for (const item of items) {
+            throw new Error("Throw test");
+            yield * itemSerialzer(item);
+        }
     },
-    function(n){ //deserialization function, called when DynamicTable.get();
-        const object = Serializer.getDeserializer(SerializableKinds.Object)(n); //loaded poor object
-        return Object.setPrototypeOf(object, MyClassWithMethods.prototype); //add a MyClassWithMethods prototype
+    function(n){
+        const slots = Serializer.getDeserializer(SerializableKinds.Object)(n); //loading info
+        const itemDeserializer = Serializer.getDeserializer(APISerializableKinds.ItemStack);
+        const obj = new ContainerMetadata();
+        obj.slots = slots;
+        for (const s of slots) {
+            obj.items.push(itemDeserializer(n));
+        }
+        return obj;
     }
-)
+);
 
 
-
-
-const table = DynamicTable.OpenCreate("id-of-the-table");
-table.set("key-the-test", new MyClassWithMethods("warn-id", "My custom message"));
-
-
-table.get("key-the-test").warn(); //warn method from MyClasswithMethods
-const jsDB = new JsonDatabase("the id");
-jsDB.set("Lmao","adfasdfsa".repeat(600));
-jsDB.set("Some test", {asd:"asdfasdf",asds:{asdfasdfa:"asdfasdf"}});
-for (const [k,v] of jsDB) {
-    console.warn(k,v);
-}
-jsDB.clear();
-DynamicTable.ClearAll();
-system.runTimeout(()=>console.warn(world.getDynamicPropertyTotalByteCount()), 3);
+world.clearDynamicProperties();
+const table = DynamicTable.OpenCreate("Testing so far");
+let saved = false;
+world.afterEvents.chatSend.subscribe(({sender, message})=>{
+    if(message === "m"){
+    }else{
+        if(!saved){
+            table.set("inv", ContainerMetadata.FromContainer(sender.getComponent("inventory").container));
+        }else{
+            ContainerMetadata.SaveToContainer(sender.getComponent("inventory").container, table.get("inv"));
+        }
+        saved = !saved;
+    }
+});
